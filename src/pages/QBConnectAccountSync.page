@@ -1,0 +1,22 @@
+<apex:page standardController="Account" standardStylesheets="false" showHeader="false" sidebar="false">
+    <!-- Include a JavaScript file in your Visualforce page -->
+    <apex:includeLightning />
+    <script>
+        //This will be used to get user exp i.e.Classic,SF1 ,LEX
+        var myUserContext = "{!$User.UITheme}";
+        //Tell your Visualforce page to use ExposeVF Lightning app
+        $Lightning.use("qb_connect:QBConnectLightningApp", function() {
+            // Write a function that creates the component on the page
+          $Lightning.createComponent("qb_connect:QBConnectRecordsSync",
+          {
+              recordId: "{!$CurrentPage.parameters.Id}",
+              UserContext : myUserContext,
+              sobjectName : "Account"
+          },
+          "lightning",
+          function(cmp) {
+          });
+        });
+    </script>
+    <div id="lightning"/>
+</apex:page>

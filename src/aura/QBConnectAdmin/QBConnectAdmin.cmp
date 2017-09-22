@@ -1,0 +1,361 @@
+<aura:component controller="QBConnectAdminController" implements="force:lightningQuickActionWithoutHeader,force:hasRecordId,force:appHostable" access="global" >
+    <aura:dependency resource="force:navigateToURL" type="EVENT"/>
+    <ltng:require scripts="/support/console/38.0/integration.js"/>
+    <aura:handler event="aura:waiting" action="{!c.showSpinner}"/>
+    <aura:handler event="aura:doneWaiting" action="{!c.hideSpinner}"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:attribute name="UserContext" type="string"/>
+    <aura:attribute name="authStep" type="string" default=""/>
+    <aura:attribute name="tokenParm" type="string"/>
+    <aura:attribute name="tokenVerifier" type="string"/>
+    <aura:attribute name="realmId" type="string"/>
+    
+    <aura:attribute name="IsPage1" type="boolean" default="true"/>
+    <aura:attribute name="IsQBConnected" type="boolean" default="false"/>
+    <aura:attribute name="isPollBatchEnabled" type="boolean" default="false"/>
+    <aura:attribute name="SyncAllQbToSf" type="String" default=""/>
+    <aura:attribute name="SyncAllSfToQb" type="String" default=""/>
+    <aura:attribute name="currencyDetails" type="String" default=""/>
+    <aura:attribute name="multiCurrencyDetails" type="String" default=""/>
+    <aura:attribute name="selectedDurationTypeForSchedulers" type="String" default=""/>
+    <aura:attribute name="selectedDurationForSchedulers" type="String" default=""/>
+    <aura:attribute name="AutoRunInterval" type="String" default=""/>
+    <aura:attribute name="SuccessMessage" type="String" default=""/>
+    
+    <aura:attribute name="SelectedObjAndFields" type="Map" />
+    <aura:attribute name="selectedObject" type="String" default=""/>
+    <aura:attribute name="fieldsWrapperList" type="List" default="null"/>
+    <aura:attribute name="fieldsList" type="List" default="null"/>
+    <aura:attribute name="MappingButtonsDisabled" type="boolean" default="true"/>
+    
+    <div class="slds slds-container--center" style="{!v.authStep=='' ? '' : 'display:none;'}">
+        <div class="slds-page-header" role="banner">
+            <div class="slds-media">
+                <div class="slds-media__figure">
+                    <lightning:icon iconName="utility:setup" size="small" alternativeText="setup"/>
+                </div>
+                <div class="slds-media__body">
+                    <p class="slds-text-heading--label" title="QB Connect Setup"><b>QB Connect Setup</b></p>
+                </div>
+                <!--on page 1 only-->
+                <div class="slds-media__figure slds-media__figure--reverse" style="{!v.IsPage1==true ? '' : 'display:none;'}">
+                    <button class="slds-button slds-button--brand" onclick="{!c.navigateToHome}"> Home </button>
+                </div>
+                <!--on page 2 only-->
+                <div class="slds-media__figure slds-media__figure--reverse" style="{!v.IsPage1==true ? 'display:none;' : ''}">
+                    <button class="slds-button slds-button--brand" onclick="{!c.navigateToAdminSetUp}"> Back </button>
+                </div>
+            </div>
+        </div>
+        <div class="slds-grid slds-grid--align-center">
+            <div class="slds-form-element__control slds-size--1-of-1" aura:id="ErrorDisplayId1"/>
+        </div>
+        <div class="slds-grid slds-grid--align-left toggle" aura:id="SuccessMessage">
+            <ui:message title="Confirmation" severity="confirm" class="slds-form-element__control slds-size--1-of-1">
+                {!v.SuccessMessage}
+            </ui:message>
+        </div>
+        <div style="{!v.IsPage1==true ? '' : 'display:none;'}">      
+            <!--section 1-->
+            <fieldset class="slds-form--compound">
+                <h3 class="slds-section-title--divider slds-m-top--x-small slds-m-bottom--x-small">
+                    <span >Connection Setting</span>
+                </h3>
+                <aura:if isTrue="{!v.IsQBConnected}">
+                    <div class="slds-form-element slds-m-top--x-small" >
+                        <div class="slds-grid slds-grid--align-center">
+                            <div class="slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-2">
+                                <p>Your account is connected to a QuickBooks account. Click below to Disconnect.</p>
+                            </div>
+                            <div class="slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-2" style="text-align:left;">
+                                <button type="button" class="slds-button slds-button--neutral" onclick="{!c.DisconnectQuickBooks}">Disconnect QuickBooks</button>
+                            </div>
+                        </div>
+                    </div>
+                    <aura:set attribute="else">
+                        <div class="slds-form-element slds-m-top--x-small" >
+                            <div class="slds-grid slds-grid--align-center">
+                                <div class="slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-2">
+                                    <p>Your account is not connected to a QuickBooks account.  Click the button below to connect an account. </p>
+                                </div>
+                                <div class="slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-2" style="text-align:left;">
+                                    <button type="button" class="slds-button slds-button--neutral" onclick="{!c.ConnectToQuickBooks}">Connect to QuickBooks</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </aura:set>
+                </aura:if>
+            </fieldset>
+            
+            <aura:if isTrue="{!v.IsQBConnected}">
+                <!--section 2-->
+                <fieldset class="slds-form--compound">
+                    <h3 class="slds-section-title--divider slds-m-top--x-small slds-m-bottom--x-small">
+                        <span >Custom Fields Mapping</span>
+                    </h3>
+                    <div class="slds-form-element slds-m-top--x-small" >
+                        <div class="slds-grid slds-grid--align-center">
+                            <div class="slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-2">
+                                <p>Click here to map custom fields in QuickBooks to Salesforce fields.</p>
+                            </div>
+                            <div class="slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-2" style="text-align:left;">
+                                <button type="button" class="slds-button slds-button--neutral" onclick="{!c.navigateToFieldMapping}">Map Fields</button>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <!--section 3-->
+                <fieldset class="slds-form--compound">
+                    <h3 class="slds-section-title--divider slds-m-top--x-small slds-m-bottom--x-small">
+                        <span style="font-size:.75rem;">Existing Data Syncing</span>
+                        <span style="font-size:.55rem;"> (Salesforce to QuickBooks)</span>
+                    </h3>
+                    <div class="slds-form-element slds-m-top--x-small" >
+                        <div class="slds-grid slds-grid--align-center">
+                            <div class="slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-2">
+                                <p>Sync All existing Data from Salesforce to QuickBooks (i.e. account, opportunity, quote, invoice and product data).</p>
+                            </div>
+                            <div class="slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-2">
+                                <div class="slds-grid slds-grid--align-left">
+                                    <div class="slds-form-element__control  slds-size--2-of-8" >
+                                        <button type="button" class="slds-button slds-button--neutral" disabled="{!v.isPollBatchEnabled}" onclick="{!c.syncAllDataToQB}">Start Sync</button>
+                                    </div>
+                                    <div class="slds-form-element__control  slds-size--6-of-8" >
+                                        
+                                        <div >{!v.SyncAllSfToQb} <a  onclick="{!c.refreshBatchRun}" title="Refresh"><lightning:icon class="{!v.SyncAllSfToQb=='(In Progress)' ? 'slds-m-left--medium' : 'toggle' }" iconName="action:refresh" size="small" alternativeText="Refresh"/></a></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <!--section 4-->
+                <fieldset class="slds-form--compound">
+                    <h3 class="slds-section-title--divider slds-m-top--x-small slds-m-bottom--x-small">
+                        <span style="font-size:.75rem;">Existing Data Syncing</span>
+                        <span style="font-size:.55rem;"> (QuickBooks to Salesforce)</span>
+                    </h3>
+                    <div class="slds-form-element slds-m-top--x-small" >
+                        <div class="slds-grid slds-grid--align-center">
+                            <div class="slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-2">
+                                <p>Sync All existing Data from QuickBooks to Salesforce (i.e. invoice and payment data).</p>
+                            </div>
+                            <div class="slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-2">
+                                <div class="slds-grid slds-grid--align-left">
+                                    <div class="slds-form-element__control  slds-size--2-of-8" >
+                                        <button type="button" class="slds-button slds-button--neutral" disabled="{!v.isPollBatchEnabled}" onclick="{!c.syncAllDataToSF}">Start Sync</button>
+                                    </div>
+                                    
+                                    <div class="slds-form-element__control  slds-size--6-of-8" >
+                                        <div >{!v.SyncAllQbToSf} <a  onclick="{!c.refreshBatchRun}" title="Refresh"><lightning:icon class="{!v.SyncAllQbToSf=='(In Progress)' ? 'slds-m-left--medium' : 'toggle' }" iconName="action:refresh" size="small" alternativeText="Refresh"/></a></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <!--section 5-->
+                <fieldset class="slds-form--compound">
+                    <h3 class="slds-section-title--divider slds-m-top--x-small slds-m-bottom--x-small">
+                        <span >Invoice And Payment Schedulers</span>
+                    </h3>
+                    <div class="slds-form-element slds-m-top--x-small" >
+                        <div class="slds-grid slds-grid--align-center">
+                            <div class="slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-2">
+                                <p>Set the interval that updates data from QuickBooks to Salesforce (i.e. invoice and payment data).</p>
+                            </div>
+                            <div class="slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-2" style="text-align:left;">
+                                <div class="slds-grid slds-grid--align-left">
+                                    <div class="slds-form-element__control  slds-size--1-of-8" >
+                                        <ui:inputSelect aura:id="AutoRunInterval" class="slds-select" value="{!v.AutoRunInterval}">
+                                            <ui:inputSelectOption label="None" text=""/>
+                                            <ui:inputSelectOption label="45" text="45"/>
+                                            <ui:inputSelectOption label="30" text="30"/>
+                                            <ui:inputSelectOption label="15" text="15"/>
+                                            <ui:inputSelectOption label="10" text="10"/>
+                                        </ui:inputSelect>
+                                        
+                                    </div>
+                                    <div class="slds-form-element__control slds-size--1-of-8" >
+                                        (Minutes)
+                                    </div>
+                                    <div class="slds-form-element__control slds-size--6-of-8" >
+                                        <button type="button" class="slds-button slds-button--neutral" onclick="{!c.startScheduler}">Save</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <!--section 6-->
+                <fieldset class="slds-form--compound">
+                    <h3 class="slds-section-title--divider slds-m-top--x-small slds-m-bottom--x-small">
+                        <span >QuickBooks Account Currency Details</span>
+                    </h3>
+                    <div class="slds-form-element slds-m-top--x-small" >
+                        <div class="slds-grid slds-grid--align-center">
+                            <div class="slds-form-element__control slds-p-horizontal--x-large slds-size--1-of-2">
+                                <div class="slds-form-element__control slds-p-left--x-small slds-size--1-of-1">
+                                    <p>{!v.currencyDetails}</p>
+                                </div>
+                                <div class="slds-form-element__control slds-size--1-of-1">
+                                    <p>{!v.multiCurrencyDetails}</p>
+                                </div>
+                            </div>
+                            <div class="slds-form-element__control slds-p-horizontal--x-large slds-size--1-of-2" style="text-align:left;">
+                                <button type="button" class="slds-button slds-button--neutral" onclick="{!c.refreshCurrency}">Refresh Currency Details</button>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                <aura:set attribute="else"><div />
+                </aura:set>
+            </aura:if>
+        </div>
+        
+        <!--Custom field mapping page-->
+        <div aura:id="page2" style="{!v.IsPage1==true ? 'display:none;' : '' }">
+            <fieldset class="slds-form--compound">
+                <h3 class="slds-section-title--divider slds-m-top--x-small slds-m-bottom--x-small">
+                    <span >Custom Fields Mapping</span>
+                </h3>
+                <div class="slds-form-element slds-m-top--medium" >
+                    <div class="slds-grid slds-grid--align-center">
+                        <div class="slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-2">
+                            <p>Select Object for Mapping Custom fields.  </p>
+                        </div>
+                        <div class="slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-2" style="text-align:left;">
+                            <div class="slds-grid slds-grid--align-left">
+                                <div class="slds-form-element__control  slds-size--2-of-8" >
+                                    <ui:inputSelect aura:id="selectedObjectDiv" class="slds-select" value="{!v.selectedObject}" change="{!c.onSelectedObjChange}">
+                                        <ui:inputSelectOption label="None" text=""/>
+                                        <ui:inputSelectOption label="Estimate to Quote" text="Quote"/>
+                                        <ui:inputSelectOption label="Invoice to Invoice" text="Invoice__c"/>
+                                        <ui:inputSelectOption label="Invoice to Quote " text="QuoteToInvoice"/>
+                                    </ui:inputSelect>
+                                    
+                                </div>
+                                <div class="slds-form-element__control slds-size--6-of-8" style="{!v.selectedObject!='' ? '' : 'display:none;' }">
+                                    <button type="button" class="slds-button slds-button--neutral" onclick="{!c.refreshFieldsFromQB}">Refresh Fields from Quickbooks</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!--table for showing fields data-->
+                <div class="slds-m-top--medium" style="{!(v.IsPage1==false &amp;&amp; v.selectedObject!='' &amp;&amp; v.fieldsWrapperList!=null) ? '' : 'display:none;' }"> 
+                    <div style="{!v.fieldsWrapperList.length!=0 ? '' : 'display:none;' }" >
+                        <div class="slds-grid slds-grid--align-center">
+                            <div class="slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-1" >
+                                <table class="slds-table slds-table--bordered slds-table--cell-buffer">
+                                    <thead>
+                                        <tr class="slds-text-title--caps">
+                                            <th scope="col" style="text-align:center;">
+                                                <div class="slds-truncate" title="QuickBooks Field Defination Id"><b>QuickBooks Field Defination Id</b></div>
+                                            </th>
+                                            <th scope="col" style="text-align:center;">
+                                                <div class="slds-truncate" title="QuickBooks Field Name"><b>QuickBooks Field Name</b></div>
+                                            </th>
+                                            <th scope="col" style="text-align:center;">
+                                                <div class="slds-truncate" title="QuickBooks Field Type"><b>QuickBooks Field Type</b></div>
+                                            </th>
+                                            
+                                            <th scope="col" style="text-align:center;">
+                                                <aura:if isTrue="{!v.MappingButtonsDisabled}" >
+                                                    <div class="slds-truncate" title="Salesforce Field Mapped(API Name)"><b>Salesforce Field Mapped (API Name)</b></div>
+                                                    <aura:set attribute="else">
+                                                        <div class="slds-truncate" title="Salesforce Field To Map"><b>Salesforce Field To Map</b></div>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <aura:iteration items="{!v.fieldsWrapperList}"  var="wr" indexVar="index" >
+                                            <tr>
+                                                <th scope="row" data-label="QB Field Defination Id" style="text-align:center;">
+                                                    <div class="slds-truncate" title="{!wr.DefinitionId}">{!wr.DefinitionId}</div>
+                                                </th>
+                                                <td data-label="QuickBooks Field Name" style="text-align:center;">
+                                                    <div class="slds-truncate"  title="{!wr.Name}">{!wr.Name}</div>
+                                                </td>
+                                                <td data-label="QuickBooks Field Type" style="text-align:center;">
+                                                    <div class="slds-truncate" title="{!wr.Type}">{!wr.Type}</div>
+                                                </td>
+                                                <aura:if isTrue="{!v.MappingButtonsDisabled}" >
+                                                    <td data-label="Salesforce Field Mapped(API Name)" style="text-align:center;">
+                                                        <div class="slds-truncate" title="{!wr.StringValue}">{!wr.StringValue}</div>
+                                                    </td>
+                                                    
+                                                    <aura:set attribute="else">
+                                                        
+                                                        <td data-label="Salesforce Field To Map" style="text-align:center;">
+                                                            <div class="slds-form-element">
+                                                                <div class="slds-form-element__control">
+                                                                    <div class="slds-select_container">
+                                                                        <ui:inputSelect class="slds-select" value="{!wr.StringValue}" disabled="{!v.MappingButtonsDisabled}">
+                                                                            <aura:iteration items="{!v.fieldsList}" var="wr1">
+                                                                                <ui:inputSelectOption text="{!wr1.value}" label="{!wr1.label}"/>
+                                                                            </aura:iteration>
+                                                                        </ui:inputSelect>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        
+                                                    </aura:set>
+                                                </aura:if>
+                                            </tr>
+                                        </aura:iteration>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="slds-grid slds-grid--align-center slds-m-top--medium" style="{!v.fieldsWrapperList.length!=0 ? '' : 'display:none;' }">
+                            <div class="slds-button-group slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-3"/>    
+                            <div class="slds-button-group slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-3" role="group">
+                                <div  class="slds-m-left--xx-large" style="{!v.MappingButtonsDisabled==true ? '' : 'display:none;' }">
+                                    <button class="slds-button slds-button--neutral" onclick="{!c.EditMapping}">Edit Mapping</button>
+                                </div>
+                                <div  class="slds-m-left--xx-large" style="{!v.MappingButtonsDisabled==true ? 'display:none;' : '' }">
+                                    <button class="slds-button slds-button--neutral" onclick="{!c.SaveFieldMapping}">Save Mapping</button>
+                                    <button class="slds-button slds-button--neutral" onclick="{!c.CancelSaveMapping}">Cancel</button>
+                                </div>
+                            </div>
+                            <div class="slds-button-group slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-3"/>
+                        </div>
+                    </div>
+                    <div style="{!v.fieldsWrapperList.length!=0 ? 'display:none;' : '' }" >    
+                        <div class="slds-grid slds-grid--align-center">
+                            <div class="slds-form-element__control slds-p-horizontal--xx-large slds-size--1-of-1 " >
+                                <span style="color:#D8000C!important;font-size:15px !important;">
+                                    <b> No Custom fields found in QuickBooks. </b>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </fieldset>
+        </div>
+    </div>   
+    
+    <!--For Loading spinner-->
+    <div>
+        <div  role="dialog" tabindex="-1" class="slds-modal slds-align-middle" aura:id="LoadingModal" >
+            <div class="slds-modal__container slds-align-middle">
+                <div class="slds-modal__header slds-align-middle">
+                    <ui:spinner aura:id="spinner" isVisible="false"/>
+                </div>
+            </div>
+            <div class="slds-backdrop" aura:id="LoadingModalBackdrop"></div>
+        </div>
+    </div>
+</aura:component>

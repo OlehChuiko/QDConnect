@@ -1,0 +1,50 @@
+<aura:component controller="QBConnectSyncUtility" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes" access="global" >
+    <aura:dependency resource="force:navigateToSObject" type="EVENT"/>
+    <ltng:require scripts="/support/console/38.0/integration.js"/>
+    <aura:handler event="aura:waiting" action="{!c.showSpinner}"/>
+    <aura:handler event="aura:doneWaiting" action="{!c.hideSpinner}"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:attribute name="UserContext" type="string"/>
+    <aura:attribute name="SuccessMessage" type="String" default=""/>
+    <aura:attribute name="ErrorMessage" type="String" default=""/>
+    
+    <div class="slds slds-container--center">
+        <div class="slds-page-header" role="banner">
+            <div class="slds-media">
+                <div class="slds-media__figure">
+                    <lightning:icon iconName="standard:account" size="small" alternativeText="setup"/>
+                </div>
+                <div class="slds-media__body">
+                    <p class="slds-text-heading--label" title="QB Connect Account Sync"><b>QB Connect Account Sync</b></p>
+                </div>
+                <!--on page 2 only-->
+                <div class="slds-media__figure slds-media__figure--reverse">
+                    <button class="slds-button slds-button--brand" onclick="{!c.navigateToTecord}">Close</button>
+                </div>
+            </div>
+        </div>
+        <div class="slds-grid slds-grid--align-left toggle" aura:id="ErrorMessage">
+            <ui:message title="Error" severity="error" class="slds-form-element__control slds-size--1-of-1">
+                {!v.ErrorMessage}
+            </ui:message>
+        </div>
+        <div class="slds-grid slds-grid--align-left toggle" aura:id="SuccessMessage">
+            <ui:message title="Confirmation" severity="confirm" class="slds-form-element__control slds-size--1-of-1">
+                {!v.SuccessMessage}
+            </ui:message>
+        </div>
+        
+        <!--For Loading spinner-->
+        <div>
+            <div  role="dialog" tabindex="-1" class="slds-modal slds-align-middle" aura:id="LoadingModal" >
+                <div class="{!v.IsUserInSF1==true ? 'slds-modal__container slds-align-middle AlignCenterSpinner' : 'slds-modal__container'}">
+                    <div class="slds-modal__header slds-align-middle">
+                        <ui:spinner aura:id="spinner" isVisible="false"/>
+                    </div>
+                </div>
+                <div class="slds-backdrop" aura:id="LoadingModalBackdrop"></div>
+            </div>
+        </div>
+    </div>
+</aura:component>

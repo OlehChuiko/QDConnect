@@ -1,0 +1,86 @@
+<apex:page controller="QuickbooksAPI" tabStyle="QuickBook_Integration_Setup__tab">
+  <style type="text/css">
+     .overlay {
+        background-color: ##F8F8FF;
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        opacity: 0.5;
+        filter: Alpha(opacity = 50); / IE8 and earlier /
+        z-index: 10;
+        background-image: url({!$Resource.LoadingImage});
+        background-repeat: no-repeat;
+        background-position: center;
+    }
+    .enabledButton{
+        color:#6699FF!important;
+        font-size:12px !important;
+    }
+    .disabledButton{
+        font-size:12px !important;
+        cursor: default;
+        pointer-events: none;
+
+        /*Button disabled - CSS color class*/
+        color: #c0c0c0;
+        background-color: #ffffff;
+    }
+ </style>
+  <apex:form >
+        <apex:pageBlock title="QuickBooks Setup"  id="PB">
+        <apex:actionPoller action="{!pollBatchRunStatus}" enabled="{!isPollBatchEnabled}" rerender="PB" interval="5" id="pollerId"/>
+        <apex:actionStatus startText="(Retrieving...)" id="waitStatus" layout="block">
+            <apex:facet name="start">
+                <div class="overlay"></div>
+            </apex:facet>
+            <apex:facet name="stop" />
+      </apex:actionStatus>
+      <apex:pageMessages />
+          <apex:pageBlockSection title="Connection Setting" collapsible="false"></apex:pageBlockSection><br/>
+                  <apex:outputLabel rendered="{!!IsQBConnected}" style="font-size:13px;">Your account is not connected to a QuickBooks account.  Click the button below to connect an account. </apex:outputLabel>
+                  <apex:outputLabel rendered="{!IsQBConnected}" style="font-size:13px;">Your account is connected to a QuickBooks account.  Click below to Disconnect.</apex:outputLabel>
+              <br/><br/>
+                  <apex:commandButton action="{!OAuth_Step1_getTempTokenAndRedirectToIntuit}" status="waitStatus" value=" Connect to QuickBooks " style="color:#6699FF!important;font-size:12px !important;" rendered="{!!IsQBConnected}" reRender="PB"/>
+                  <apex:commandButton action="{!disconnectQB}" value=" Disconnect QuickBooks " status="waitStatus" style="color:#6699FF!important;font-size:12px !important;" rendered="{!IsQBConnected}"/>
+        <apex:outPutPanel rendered="{!IsQBConnected && IsPaidVersion}">     
+             <apex:pageBlockSection title="Custom Fields Mapping"  collapsible="false"></apex:pageBlockSection><br/>
+                  <apex:outputLabel style="font-size:13px;">Click here to map custom fields in QuickBooks to Salesforce fields. </apex:outputLabel>&nbsp;&nbsp;&nbsp;&nbsp;
+                  
+                  <apex:commandButton action="{!mapQBFieldPage}" value=" Map Fields " style="color:#6699FF!important;font-size:12px !important;" reRender="PB"/>
+            <br/>
+            <apex:pageBlockSection title="Existing Data Syncing"  collapsible="false"></apex:pageBlockSection><br/>
+                  <apex:outputLabel style="font-size:13px;">Sync All existing Data from Salesforce to QuickBooks (i.e. account, opportunity, quote, invoice and product data).</apex:outputLabel>&nbsp;&nbsp;&nbsp;&nbsp;
+                  <apex:commandButton action="{!syncAllDataSFToQB}" disabled="{!isPollBatchEnabled}" status="waitStatus" value=" Start Sync " styleClass="{!IF(isPollBatchEnabled,'disabledButton','enabledButton' )}" reRender="PB"/>&nbsp;&nbsp;<apex:outputLabel style="color:#6699FF!important;font-size:14px !important;" id="SyncAllSfToQb">{!SyncAllSfToQb}</apex:outputLabel>
+                   <br/><br/>
+                  <apex:outputLabel style="font-size:13px;">Sync All existing Data from QuickBooks to Salesforce (i.e. invoice and payment data).</apex:outputLabel>&nbsp;&nbsp;&nbsp;&nbsp;
+                  <apex:commandButton action="{!syncAllDataQBToSF}" disabled="{!isPollBatchEnabled}" status="waitStatus" value=" Start Sync "  styleClass="{!IF(isPollBatchEnabled,'disabledButton','enabledButton')}" reRender="PB"/>&nbsp;&nbsp;<apex:outputLabel style="color:#6699FF!important;font-size:14px !important;" id="SyncAllQbToSf">{!SyncAllQbToSf}</apex:outputLabel>
+                
+           <br/>
+             <apex:pageBlockSection title="Invoice And Payment Schedulers" collapsible="false"></apex:pageBlockSection><br/>
+                  <apex:outputLabel style="font-size:13px;">Set the interval that updates data from QuickBooks to Salesforce (i.e. invoice and payment data).</apex:outputLabel>&nbsp;&nbsp;&nbsp;&nbsp;
+                    <!--
+                    <apex:selectList value="{!selectedDurationTypeForSchedulers}" size="1" style="font-size:13px;">  
+                        <apex:selectOption itemValue="Minutes" itemLabel="Minutes"/>
+                        <apex:selectOption itemValue="Hours" itemLabel="Hours"/>
+                        <apex:selectOption itemValue="Days" itemLabel="Days"/>
+                        <apex:selectOption itemValue="Months" itemLabel="Months"/>
+                    </apex:selectList>&nbsp;&nbsp;
+                <apex:inputtext value="{!selectedDurationForSchedulers}" maxlength="3" id="selectedDurationForSchedulers" style="width:50px"/>&nbsp;&nbsp;
+                -->
+                <apex:selectList id="AutoRun" value="{!AutoRunInterval}" size="1">
+                    <apex:selectOptions value="{!AutoRunIntervalList}"/>
+                </apex:selectList> (Minutes)&nbsp;&nbsp;
+                <apex:commandButton action="{!startSchedulers}"  status="waitStatus"  value=" Save " style="color:#6699FF!important;font-size:12px !important;" reRender="PB"/>
+            <br/>
+             <apex:pageBlockSection title="QuickBooks Account Currency Details" collapsible="false"></apex:pageBlockSection><br/>
+                <!--<apex:outputLabel rendered="{!IsCurrencyMismatch}" style="font-size:13px;color:red!important;">Note : Home Currency for Salesforce and Quickbooks are not Matched. </apex:outputLabel><br/><br/>-->
+                <apex:outputText style="font-size:13px;white-space: pre" value="{!currencyDetails}" id="currencyDetails"/>&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+                <apex:outputText style="font-size:13px;white-space: pre" value="{!multiCurrencyDetails}" id="multiCurrencyDetails"/>&nbsp;&nbsp;&nbsp;&nbsp;
+                <apex:commandButton action="{!refreshCurrencyDetails}" status="waitStatus" value=" Refresh Currency Details " style="color:#6699FF!important;font-size:12px !important;" reRender="PB"/>
+            <br/><br/>
+         </apex:outPutPanel>
+      </apex:pageBlock>
+   </apex:form>
+</apex:page>

@@ -1,0 +1,14 @@
+<apex:page controller="QuickbooksAPI" tabStyle="QuickBook_Integration_Setup__tab">
+    <script type = "text/javascript">
+        window.onload=function()       
+        {        
+            OAuth_Step2_getFinalToken();            
+        };
+    </script>
+    <apex:form >
+        <apex:pageBlock mode="MainDetail">
+            <apex:actionFunction action="{!OAuth_Step2_getFinalToken}" name="OAuth_Step2_getFinalToken"/>
+            <apex:pageMessages />
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

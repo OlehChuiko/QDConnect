@@ -1,0 +1,42 @@
+<apex:page controller="QuickbooksAPI" tabStyle="QuickBook_Integration_Setup__tab">
+    <script type = "text/javascript">
+        window.onload=function()       
+        {        
+            createTaxAgency();            
+        };
+        
+        function isLightningExperienceOrSalesforce1() {
+            return((typeof sforce != 'undefined') && sforce && (!!sforce.one));
+        }
+        
+        function navigateToSetUp() { 
+            //alert(isLightningExperienceOrSalesforce1());
+            if (isLightningExperienceOrSalesforce1()) {
+               sforce.one.navigateToURL('/apex/qb_connect__QuickbooksIntegrationAuth');
+            }else{
+                backToSetUp();
+            }
+        }
+    </script>
+    <apex:form >
+    <apex:pageBlock title="QuickBooks Setup" >
+    <apex:actionFunction action="{!Back}" name="backToSetUp"/>
+    <apex:pageBlockButtons location="bottom">
+         <apex:commandButton action="{!Back}" status="waitStatus" value=" Back to QuickBooks setup " style="color:#6699FF!important;font-size:13px !important;"/>
+    </apex:pageBlockButtons>
+    <apex:actionFunction action="{!createTaxAgency}" name="createTaxAgency" reRender=""/>
+    <apex:actionStatus startText="(Retrieving...)" id="waitStatus" layout="block">
+            <apex:facet name="start">
+                <div class="overlay"></div>
+            </apex:facet>
+            <apex:facet name="stop" />
+      </apex:actionStatus>
+      <apex:pageMessages id="PB"/>
+      <apex:pageBlockSection title="Connection Setting" collapsible="false"></apex:pageBlockSection><br/>
+      
+      <apex:outputPanel >
+          <apex:outputLabel style="font-size:15px;">Success!  Your account is now connected to QuickBooks.<br/> Click the button below if you would like to go back to setup.</apex:outputLabel><br/>
+      </apex:outputPanel>
+  </apex:pageBlock>
+   </apex:form>
+</apex:page>

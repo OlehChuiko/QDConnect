@@ -1,0 +1,96 @@
+<apex:page Controller="MapInvoiceCustomFieldsController" tabStyle="QuickBook_Integration_Setup__tab">
+    <style>
+        .HeaderClass{
+        height:22px ;
+        font-size:15px !important;
+        color:#FFFFFF!important;
+        background-color:#6699FF!important;
+        text-align:center;
+    }
+    .FooterClass{
+        height:22px ;
+        font-size:14px !important;
+        text-align:center;
+        //color:#52D017 !important;
+        //background-color: blue!important;
+    }
+    .overlay {
+        background-color: ##F8F8FF;
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        opacity: 0.5;
+        filter: Alpha(opacity = 50); / IE8 and earlier /
+        z-index: 10;
+        background-image: url({!$Resource.LoadingImage});
+        background-repeat: no-repeat;
+        background-position: center;
+ }
+    </style>
+    <script type = "text/javascript">
+        
+        function isLightningExperienceOrSalesforce1() {
+            return((typeof sforce != 'undefined') && sforce && (!!sforce.one));
+        }
+        
+        function navigateToSetUp() { 
+            if (isLightningExperienceOrSalesforce1()) {
+               sforce.one.navigateToURL('/apex/qb_connect__QuickbooksIntegrationAuth');
+            }else{
+                backToSetUp();
+            }
+        }
+    </script>
+    <apex:form >
+        <apex:pageBlock title="Custom Fields Mapping" id="pb" >
+        <apex:actionFunction action="{!Back}" name="backToSetUp"/>
+        <apex:actionStatus startText="(Retrieving...)" id="waitStatus" layout="block">
+            <apex:facet name="start">
+                <div class="overlay"></div>
+            </apex:facet>
+            <apex:facet name="stop" />
+        </apex:actionStatus>
+        <apex:pageMessages />
+        <apex:pageblockbuttons location="bottom">
+                <apex:commandButton action="{!SaveMapping}" status="waitStatus" value=" Save Mapping " style="color:#6699FF!important;font-size:13px !important;" reRender="pb" rendered="{!!isDisabled && fieldsWrapperList!=Null && fieldsWrapperList.size!=0 && selectedObject!=''}" />
+                 <apex:commandButton action="{!editMapping}" status="waitStatus" value=" Edit Mapping " style="color:#6699FF!important;font-size:13px !important;" reRender="pb" rendered="{!isDisabled && fieldsWrapperList!=Null && fieldsWrapperList.size!=0 && selectedObject!=''}"/>
+                 <apex:commandButton action="{!Cancel}" status="waitStatus" value=" Cancel " style="color:#6699FF!important;font-size:13px !important;" reRender="pb" rendered="{!!isDisabled && fieldsWrapperList!=Null && fieldsWrapperList.size!=0 && selectedObject!=''}" />
+                 <apex:commandButton onclick="navigateToSetUp(); return false;" status="waitStatus" value=" Back to QuickBooks setup " style="color:#6699FF!important;font-size:13px !important;"/>
+        </apex:pageblockbuttons>
+        
+        <apex:outputPanel rendered="{!IsPaidVersion}"> 
+            <br/>
+            <apex:outputLabel style="font-size:13px;">Select Object for Mapping Custom fields. </apex:outputLabel>&nbsp;&nbsp;&nbsp;&nbsp;
+            <apex:selectList value="{!selectedObject}" size="1" style="font-size:13px;">  
+                <apex:selectOption itemValue="" itemLabel="None"/>
+                <apex:selectOption itemValue="Quote" itemLabel="Quote to Estimate"/>
+                <apex:selectOption itemValue="Invoice__c" itemLabel="Invoice to Invoice"/>
+                <apex:selectOption itemValue="QuoteToInvoice" itemLabel="Quote to Invoice"/>
+               <apex:actionSupport event="onchange" reRender="pb" status="waitStatus" action="{!init}" />
+            </apex:selectList>&nbsp;&nbsp;
+        </apex:outputPanel> 
+        
+        <apex:outputPanel rendered="{!selectedObject!='' && fieldsWrapperList!=Null}"> 
+            <apex:commandlink onclick="if (confirm('Existing field mapping(if any) will be deleted. Do you want to continue?') === false) { return false; }" action="{!refreshFromQB}" value="Refresh Fields from Quickbooks" style="color:#6699FF!important;font-size:14px !important;" status="waitStatus" reRender="pb"/>
+            <br/><br/>
+        </apex:outputPanel>
+        
+        <apex:outputPanel rendered="{!selectedObject!='' && fieldsWrapperList!=Null}"> 
+            <apex:PageBlockTable value="{!fieldsWrapperList}" var="wr"  width="75%" rendered="{!fieldsWrapperList.size!=0}" id="PBTable" align="center">
+               <apex:column value="{!wr.DefinitionId}"  headerValue="QuickBooks Field Defination Id" headerClass="HeaderClass" width="5%" styleClass="FooterClass" style="vertical-align:center; text-align:center;"/>
+               <apex:column value="{!wr.Name}"  headerValue="QuickBooks Field Name" headerClass="HeaderClass" styleClass="FooterClass" style="vertical-align:center; text-align:center;"/>
+               <apex:column value="{!wr.Type}"  headerValue="QuickBooks Field Type" headerClass="HeaderClass" styleClass="FooterClass" style="vertical-align:center; text-align:center;"/>
+               <apex:column headerValue="Salesforce Field To Map" headerClass="HeaderClass" styleClass="FooterClass" style="vertical-align:center; text-align:center;">
+                   <apex:selectList value="{!wr.StringValue}" size="1" id="SFfield" disabled="{!isDisabled}">
+                        <apex:selectOptions value="{!fieldsName}"/>
+                   </apex:selectList>
+               </apex:column>
+            </apex:PageBlockTable> 
+            <apex:outputLabel style="color:#D8000C!important;font-size:15px !important;" rendered="{!fieldsWrapperList.size==0}"><b> No Custom fields found in QuickBooks. </b></apex:outputLabel>
+        </apex:outputPanel>    
+        
+     </apex:pageBlock> 
+    </apex:form>
+</apex:page>

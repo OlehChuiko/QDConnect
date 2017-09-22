@@ -1,0 +1,57 @@
+<apex:page standardController="Quote" extensions="MapInvoiceToQuickBookController">
+    <style type="text/css">
+     .overlay {
+        background-color: ##F8F8FF;
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        opacity: 0.5;
+        filter: Alpha(opacity = 50); / IE8 and earlier /
+        z-index: 10;
+        background-image: url({!$Resource.LoadingImage});
+        background-repeat: no-repeat;
+        background-position: center;
+     }
+     </style>
+    <script type = "text/javascript">
+        window.onload=function()       
+        {        
+            if (confirm("Are you sure ?") == true) {
+                 syncData();            
+            } else {
+                navigateToRecord();
+            }
+            
+        };
+        
+        function isLightningExperienceOrSalesforce1() {
+            return((typeof sforce != 'undefined') && sforce && (!!sforce.one));
+        }
+        
+        function navigateToRecord() { 
+            if (isLightningExperienceOrSalesforce1()) {
+               sforce.one.navigateToSObject("{!Quote.Id}");
+            }else{
+                window.open('/' + "{!Quote.Id}","_top");
+            }
+        }
+    </script>
+    <apex:form id="formId">
+        <apex:pageBlock mode="MainDetail">
+        <apex:actionStatus startText="(Retrieving...)" id="waitStatus" layout="block">
+            <apex:facet name="start">
+                <div class="overlay"></div>
+            </apex:facet>
+            <apex:facet name="stop" />
+      </apex:actionStatus>
+        <apex:actionFunction action="{!createInvoice}" name="syncData" reRender="formId"  status="waitStatus"/>
+        <apex:pageBlockButtons >
+                <apex:commandButton value=" Close " onclick="navigateToRecord(); return false;" rendered="{!isDisplayed}"/>
+            </apex:pageBlockButtons>
+        <apex:pageMessages />
+        </apex:pageBlock>
+        
+    </apex:form>
+</apex:page>
